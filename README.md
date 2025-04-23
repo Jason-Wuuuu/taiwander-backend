@@ -137,8 +137,6 @@ taiwander-backend/
 └── requirements.txt            # Project dependencies
 ```
 
-The structure is designed to be modular and scalable, allowing for easy addition of new domains (like restaurants and hotels) in the future.
-
 ## Features
 
 - Daily data updates from Taiwan tourism open data
@@ -147,7 +145,7 @@ The structure is designed to be modular and scalable, allowing for easy addition
 
 ## Attraction Data
 
-The application uses attraction data from Taiwan's official tourism API:
+The application uses attraction data from Taiwan's official tourism data:
 
 ### Data Structure
 
@@ -389,9 +387,3 @@ Query Parameters:
 - `region`: Region/city name
 - `page`: Page number (default: 1)
 - `limit`: Number of items per page (default: 20)
-
-Response: Same format as Get All Attractions
-
-```
-
-```
