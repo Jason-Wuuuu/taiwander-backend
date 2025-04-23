@@ -1,8 +1,3 @@
-# Virtual Environment
-.venv/
-venv/
-ENV/
-
 # Python
 __pycache__/
 *.py[cod]
@@ -25,17 +20,39 @@ wheels/
 .installed.cfg
 *.egg
 
-# MongoDB
-data/
-
-# Environment variables
+# Virtual Environment
 .env
+.venv
+env/
+venv/
+ENV/
+env.bak/
+venv.bak/
 
-# IDE
+# IDE files
 .idea/
 .vscode/
 *.swp
 *.swo
 
-# OS specific
+# Local development
 .DS_Store
+.coverage
+htmlcov/
+.pytest_cache/
+pytest.ini
+
+# Project specific
+data/
+*.log
+
+# MongoDB
+*.wt
+*.0
+*.1
+*.2
+mongod.lock
+
+# Distribution / packaging
+*.manifest
+*.spec 

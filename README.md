@@ -19,6 +19,15 @@ A FastAPI backend service that:
 - Python 3.7+
 - MongoDB
 
+## Dependencies
+
+- FastAPI: Web framework for building APIs
+- Motor: Async MongoDB driver
+- PyMongo: MongoDB driver
+- Requests: HTTP library for fetching data
+
+All dependencies can be installed from the requirements.txt file.
+
 ## Setup
 
 ### Virtual Environment
@@ -34,11 +43,51 @@ source .venv/bin/activate
 pip install -r requirements.txt
 ```
 
+### Environment Variables
+
+Create a `.env` file in the root directory with the following variables:
+
+```env
+# Application settings
+APP_NAME="Taiwander Backend"
+APP_VERSION="0.1.0"
+DEBUG=true
+
+# MongoDB settings
+MONGODB_URL="mongodb://localhost:27017"
+MONGODB_DB_NAME="taiwander"
+
+# Data sync settings
+DATA_SYNC_INTERVAL_HOURS=24
+DATA_ZIP_PATH="data/attractions.zip"
+DATA_LOG_PATH="data/sync.log"
+```
+
 ### Running the Application
 
 ```bash
 # Start the server
 fastapi dev
+```
+
+### Data Synchronization
+
+The application has two methods for syncing attraction data from Taiwan's tourism API:
+
+1. **Automatic Check on Startup**: The server performs comprehensive checks:
+
+   - Verifies the `/data` directory exists
+   - Confirms all required data files are present (`AttractionList.json`, `AttractionServiceTimeList.json`, `AttractionFeeList.json`)
+   - Checks if the data files were last updated today
+   - Validates that attraction data exists in the MongoDB database
+
+   If any of these checks fail, the application automatically triggers a data sync.
+
+2. **Manual Sync**: You can also manually run the data sync script:
+
+```bash
+# Run data sync script
+python scripts/data_sync.py
 ```
 
 ### API Documentation
@@ -51,41 +100,43 @@ Once the server is running, API documentation is available at:
 ## Project Structure
 
 ```
+
 taiwander-backend/
 ├── app/
-│   ├── main.py                    # FastAPI application entry point
-│   ├── config.py                  # Configuration settings
-│   ├── api/
-│   │   ├── v1/                    # API version 1 endpoints
-│   │   │   ├── attractions.py     # Attraction routes
-│   │   │   └── (future domains)   # For restaurants, hotels, etc.
-│   │   └── dependencies.py        # API dependencies (pagination, etc.)
-│   ├── models/
-│   │   ├── base.py                # Base models and mixins
-│   │   └── attractions.py         # Attraction models
-│   ├── schemas/                   # Pydantic schemas for validation
-│   │   ├── common.py              # Shared schemas (pagination, etc.)
-│   │   └── attractions.py         # Attraction schemas
-│   ├── database/
-│   │   ├── mongodb.py             # MongoDB connection
-│   │   └── repositories/          # Data access repositories
-│   │       ├── base.py            # Base repository patterns
-│   │       └── attractions.py     # Attraction data operations
-│   ├── core/
-│   │   ├── settings.py            # App settings from env variables
-│   │   └── exceptions.py          # Custom exception handlers
-│   └── services/
-│       ├── data/
-│       │   ├── fetcher.py         # Base data fetcher
-│       │   └── attractions.py     # Attractions data sync
-│       └── search.py              # Search functionality
+│ ├── main.py # FastAPI application entry point
+│ ├── config.py # Configuration settings
+│ ├── api/
+│ │ ├── v1/ # API version 1 endpoints
+│ │ │ ├── attractions.py # Attraction routes
+│ │ │ └── (future domains) # For restaurants, hotels, etc.
+│ │ └── dependencies.py # API dependencies (pagination, etc.)
+│ ├── models/
+│ │ ├── base.py # Base models and mixins
+│ │ └── attractions.py # Attraction models
+│ ├── schemas/ # Pydantic schemas for validation
+│ │ ├── common.py # Shared schemas (pagination, etc.)
+│ │ └── attractions.py # Attraction schemas
+│ ├── database/
+│ │ ├── mongodb.py # MongoDB connection
+│ │ └── repositories/ # Data access repositories
+│ │ ├── base.py # Base repository patterns
+│ │ └── attractions.py # Attraction data operations
+│ ├── core/
+│ │ ├── settings.py # App settings from env variables
+│ │ └── exceptions.py # Custom exception handlers
+│ └── services/
+│ ├── data/
+│ │ ├── fetcher.py # Base data fetcher
+│ │ └── attractions.py # Attractions data sync
+│ └── search.py # Search functionality
 ├── scripts/
-│   └── data_sync.py               # Scheduled data sync script
-├── tests/                         # Test package
-│   ├── test_api/                  # API tests
-│   └── test_services/             # Service tests
-├── .env                           # Environment variables (gitignored)
-└── requirements.txt               # Project dependencies
+│ └── data_sync.py # Scheduled data sync script
+├── tests/ # Test package
+│ ├── test_api/ # API tests
+│ └── test_services/ # Service tests
+├── .env # Environment variables (gitignored)
+└── requirements.txt # Project dependencies
+
 ```
 
 The structure is designed to be modular and scalable, allowing for easy addition of new domains (like restaurants and hotels) in the future.
@@ -240,14 +291,16 @@ This data is sourced from Taiwan's official tourism data platform (政府資料�
 
 ## API Endpoints
 
-<!-- The following endpoints will be available once the backend is implemented: -->
+The following endpoints are available:
 
 ### Attractions
 
 #### Get All Attractions
 
 ```
+
 GET /api/attractions?page=1&limit=20
+
 ```
 
 Query Parameters:
@@ -375,3 +428,7 @@ Query Parameters:
 - `limit`: Number of items per page (default: 20)
 
 Response: Same format as Get All Attractions
+
+```
+
+```
