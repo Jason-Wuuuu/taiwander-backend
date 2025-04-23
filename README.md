@@ -100,43 +100,41 @@ Once the server is running, API documentation is available at:
 ## Project Structure
 
 ```
-
 taiwander-backend/
 ├── app/
-│ ├── main.py # FastAPI application entry point
-│ ├── config.py # Configuration settings
-│ ├── api/
-│ │ ├── v1/ # API version 1 endpoints
-│ │ │ ├── attractions.py # Attraction routes
-│ │ │ └── (future domains) # For restaurants, hotels, etc.
-│ │ └── dependencies.py # API dependencies (pagination, etc.)
-│ ├── models/
-│ │ ├── base.py # Base models and mixins
-│ │ └── attractions.py # Attraction models
-│ ├── schemas/ # Pydantic schemas for validation
-│ │ ├── common.py # Shared schemas (pagination, etc.)
-│ │ └── attractions.py # Attraction schemas
-│ ├── database/
-│ │ ├── mongodb.py # MongoDB connection
-│ │ └── repositories/ # Data access repositories
-│ │ ├── base.py # Base repository patterns
-│ │ └── attractions.py # Attraction data operations
-│ ├── core/
-│ │ ├── settings.py # App settings from env variables
-│ │ └── exceptions.py # Custom exception handlers
-│ └── services/
-│ ├── data/
-│ │ ├── fetcher.py # Base data fetcher
-│ │ └── attractions.py # Attractions data sync
-│ └── search.py # Search functionality
+│   ├── main.py                 # FastAPI application entry point
+│   ├── config.py               # Configuration settings
+│   ├── api/
+│   │   ├── v1/                 # API version 1 endpoints
+│   │   │   ├── attractions.py  # Attraction routes
+│   │   │   └── (future domains)# For restaurants, hotels, etc.
+│   │   └── dependencies.py     # API dependencies (pagination, etc.)
+│   ├── models/
+│   │   ├── base.py             # Base models and mixins
+│   │   └── attractions.py      # Attraction models
+│   ├── schemas/                # Pydantic schemas for validation
+│   │   ├── common.py           # Shared schemas (pagination, etc.)
+│   │   └── attractions.py      # Attraction schemas
+│   ├── database/
+│   │   ├── mongodb.py          # MongoDB connection
+│   │   └── repositories/       # Data access repositories
+│   │       ├── base.py         # Base repository patterns
+│   │       └── attractions.py  # Attraction data operations
+│   ├── core/
+│   │   ├── settings.py         # App settings from env variables
+│   │   └── exceptions.py       # Custom exception handlers
+│   └── services/
+│       ├── data/
+│       │   ├── fetcher.py      # Base data fetcher
+│       │   └── attractions.py  # Attractions data sync
+│       └── search.py           # Search functionality
 ├── scripts/
-│ └── data_sync.py # Scheduled data sync script
-├── tests/ # Test package
-│ ├── test_api/ # API tests
-│ └── test_services/ # Service tests
-├── .env # Environment variables (gitignored)
-└── requirements.txt # Project dependencies
-
+│   └── data_sync.py            # Scheduled data sync script
+├── tests/                      # Test package
+│   ├── test_api/               # API tests
+│   └── test_services/          # Service tests
+├── .env                        # Environment variables (gitignored)
+└── requirements.txt            # Project dependencies
 ```
 
 The structure is designed to be modular and scalable, allowing for easy addition of new domains (like restaurants and hotels) in the future.
@@ -149,105 +147,72 @@ The structure is designed to be modular and scalable, allowing for easy addition
 
 ## Attraction Data
 
-The application uses attraction data from Taiwan's official tourism API, which includes:
+The application uses attraction data from Taiwan's official tourism API:
 
 ### Data Structure
 
-The attraction data consists of three main components:
+The application retrieves data from three source files:
 
-1. **AttractionList.json**: Core attraction information including:
+1. **AttractionList.json**: Core attraction information
+2. **AttractionServiceTimeList.json**: Operating hours information
+3. **AttractionFeeList.json**: Admission fee information
 
-   - Basic details (name, ID, description)
-   - Geographic coordinates
-   - Address and contact information
-   - Classification
-   - Images
-   - Facilities information
-   - Access information
-
-2. **AttractionServiceTimeList.json**: Operating hours for attractions including:
-
-   - Opening/closing times for weekdays and weekends
-   - Seasonal variations in operating hours
-   - Special hours for holidays
-
-3. **AttractionFeeList.json**: Admission fee information including:
-   - Regular admission prices
-   - Free attractions
-   - Special pricing information
+These are processed and merged into a single comprehensive data structure in our MongoDB database.
 
 ### Data Schema
 
-#### AttractionList Fields
+Our consolidated attraction schema includes:
 
 | Field                 | Type             | Description                          |
 | --------------------- | ---------------- | ------------------------------------ |
-| `AttractionID`        | string           | Unique identifier for the attraction |
-| `AttractionName`      | string           | Name of the attraction               |
-| `AlternateNames`      | array of strings | Alternative names for the attraction |
-| `Description`         | string           | Detailed description                 |
-| `PositionLat`         | number           | Latitude coordinate                  |
-| `PositionLon`         | number           | Longitude coordinate                 |
-| `AttractionClasses`   | array of numbers | Categories/classifications           |
-| `PostalAddress`       | object           | Physical address                     |
-| `Telephones`          | array of objects | Contact numbers                      |
-| `Images`              | array of objects | Associated images with URLs          |
-| `Organizations`       | array of objects | Managing organizations               |
-| `ServiceTimeInfo`     | object           | Operating hours reference            |
-| `TrafficInfo`         | string           | Transportation information           |
-| `ParkingInfo`         | string           | Parking details                      |
-| `Facilities`          | array of strings | Available amenities                  |
-| `ServiceStatus`       | string           | Current service status               |
-| `IsPublicAccess`      | boolean          | Public accessibility indicator       |
-| `IsAccessibleForFree` | boolean          | Free admission indicator             |
-| `FeeInfo`             | object           | Cost information reference           |
-| `PaymentMethods`      | array of strings | Accepted payment methods             |
-| `LocatedCities`       | array of objects | Location information                 |
-| `WebsiteURL`          | string           | Official website                     |
-| `MapURLs`             | array of strings | Maps and directions                  |
-| `UpdateTime`          | string/datetime  | Last data update timestamp           |
+| `id`                  | string           | Unique identifier for the attraction |
+| `name`                | string           | Name of the attraction               |
+| `alternateNames`      | array of strings | Alternative names for the attraction |
+| `description`         | string           | Detailed description                 |
+| `position`            | object           | Geographic coordinates (lat/lon)     |
+| `classes`             | array of numbers | Categories/classifications           |
+| `postalAddress`       | object           | Physical address                     |
+| `telephones`          | array of objects | Contact numbers                      |
+| `images`              | array of objects | Associated images with URLs          |
+| `organizations`       | array of objects | Managing organizations               |
+| `serviceTimes`        | array of objects | Operating hours                      |
+| `trafficInfo`         | string           | Transportation information           |
+| `parkingInfo`         | string           | Parking details                      |
+| `facilities`          | array of strings | Available amenities                  |
+| `serviceStatus`       | string           | Current service status               |
+| `isPublicAccess`      | boolean          | Public accessibility indicator       |
+| `isAccessibleForFree` | boolean          | Free admission indicator             |
+| `fees`                | array of objects | Admission costs                      |
+| `paymentMethods`      | array of strings | Accepted payment methods             |
+| `locatedCities`       | array of objects | Location information                 |
+| `websiteURL`          | string           | Official website                     |
+| `mapURLs`             | array of strings | Maps and directions                  |
+| `updatedAt`           | string/datetime  | Last data update timestamp           |
 
-#### AttractionServiceTimeList Fields
-
-| Field            | Type             | Description                               |
-| ---------------- | ---------------- | ----------------------------------------- |
-| `AttractionID`   | string           | Unique identifier matching the attraction |
-| `AttractionName` | string           | Name of the attraction                    |
-| `ServiceTimes`   | array of objects | Array of operating schedules              |
-
-Each `ServiceTimes` object contains:
+Each `serviceTimes` object contains:
 
 | Field           | Type                | Description                                 |
 | --------------- | ------------------- | ------------------------------------------- |
-| `Name`          | string              | Schedule name (e.g., "Weekday Hours")       |
-| `Description`   | string or null      | Additional schedule information             |
-| `ServiceDays`   | array of strings    | Days applicable (e.g., "Monday", "Tuesday") |
-| `StartTime`     | string/time         | Opening time in 24-hour format              |
-| `EndTime`       | string/time         | Closing time in 24-hour format              |
-| `EffectiveDate` | string/date or null | Start date of validity period               |
-| `ExpireDate`    | string/date or null | End date of validity period                 |
+| `name`          | string              | Schedule name (e.g., "Weekday Hours")       |
+| `description`   | string or null      | Additional schedule information             |
+| `days`          | array of strings    | Days applicable (e.g., "Monday", "Tuesday") |
+| `startTime`     | string/time         | Opening time in 24-hour format              |
+| `endTime`       | string/time         | Closing time in 24-hour format              |
+| `effectiveDate` | string/date or null | Start date of validity period               |
+| `expireDate`    | string/date or null | End date of validity period                 |
 
-#### AttractionFeeList Fields
-
-| Field            | Type             | Description                               |
-| ---------------- | ---------------- | ----------------------------------------- |
-| `AttractionID`   | string           | Unique identifier matching the attraction |
-| `AttractionName` | string           | Name of the attraction                    |
-| `Fees`           | array of objects | Array of fee structures                   |
-| `UpdateTime`     | string/datetime  | Last data update timestamp                |
-
-Each `Fees` object contains:
+Each `fees` object contains:
 
 | Field         | Type           | Description                 |
 | ------------- | -------------- | --------------------------- |
-| `Name`        | string         | Fee type/name               |
-| `Price`       | number         | Cost amount                 |
-| `Description` | string or null | Additional fee details      |
-| `URL`         | string or null | Link to pricing information |
+| `name`        | string         | Fee type/name               |
+| `price`       | number         | Cost amount                 |
+| `description` | string or null | Additional fee details      |
+| `url`         | string or null | Link to pricing information |
 
 #### AttractionClasses Enum
 
-The `AttractionClasses` field contains numeric codes representing different categories of attractions:
+The `classes` field contains numeric codes representing different categories of attractions:
 
 | Code | Chinese Name   | English Name            | Description                                                               |
 | ---- | -------------- | ----------------------- | ------------------------------------------------------------------------- |
@@ -298,9 +263,7 @@ The following endpoints are available:
 #### Get All Attractions
 
 ```
-
 GET /api/attractions?page=1&limit=20
-
 ```
 
 Query Parameters:
