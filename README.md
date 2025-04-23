@@ -13,7 +13,6 @@ A FastAPI backend service that:
 
 - **FastAPI**: Web framework for building APIs
 - **MongoDB**: Database for storing attraction data
-- **Python 3.x**: Programming language
 
 ## Requirements
 
@@ -48,6 +47,48 @@ Once the server is running, API documentation is available at:
 
 - Swagger UI: http://localhost:8000/docs
 - ReDoc: http://localhost:8000/redoc
+
+## Project Structure
+
+```
+taiwander-backend/
+├── app/
+│   ├── main.py                    # FastAPI application entry point
+│   ├── config.py                  # Configuration settings
+│   ├── api/
+│   │   ├── v1/                    # API version 1 endpoints
+│   │   │   ├── attractions.py     # Attraction routes
+│   │   │   └── (future domains)   # For restaurants, hotels, etc.
+│   │   └── dependencies.py        # API dependencies (pagination, etc.)
+│   ├── models/
+│   │   ├── base.py                # Base models and mixins
+│   │   └── attractions.py         # Attraction models
+│   ├── schemas/                   # Pydantic schemas for validation
+│   │   ├── common.py              # Shared schemas (pagination, etc.)
+│   │   └── attractions.py         # Attraction schemas
+│   ├── database/
+│   │   ├── mongodb.py             # MongoDB connection
+│   │   └── repositories/          # Data access repositories
+│   │       ├── base.py            # Base repository patterns
+│   │       └── attractions.py     # Attraction data operations
+│   ├── core/
+│   │   ├── settings.py            # App settings from env variables
+│   │   └── exceptions.py          # Custom exception handlers
+│   └── services/
+│       ├── data/
+│       │   ├── fetcher.py         # Base data fetcher
+│       │   └── attractions.py     # Attractions data sync
+│       └── search.py              # Search functionality
+├── scripts/
+│   └── data_sync.py               # Scheduled data sync script
+├── tests/                         # Test package
+│   ├── test_api/                  # API tests
+│   └── test_services/             # Service tests
+├── .env                           # Environment variables (gitignored)
+└── requirements.txt               # Project dependencies
+```
+
+The structure is designed to be modular and scalable, allowing for easy addition of new domains (like restaurants and hotels) in the future.
 
 ## Features
 
