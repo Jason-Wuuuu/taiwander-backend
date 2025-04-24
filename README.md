@@ -13,27 +13,6 @@ Taiwander Backend is a FastAPI-powered service that provides seamless access to 
 - Offers geospatial queries for finding nearby attractions
 - Delivers fast performance through modern async Python architecture
 
-## Table of Contents
-
-- [Data Source](#data-source)
-- [Technologies](#technologies)
-- [Requirements](#requirements)
-- [Dependencies](#dependencies)
-- [Setup](#setup)
-  - [Virtual Environment](#virtual-environment)
-  - [Environment Variables](#environment-variables)
-  - [Running the Application](#running-the-application)
-  - [Data Synchronization](#data-synchronization)
-  - [API Documentation](#api-documentation)
-- [Project Structure](#project-structure)
-- [Features](#features)
-- [API Endpoints](#api-endpoints)
-  - [Attractions](#attractions)
-  - [Filters](#filters)
-- [Attraction Data](#attraction-data)
-  - [Data Structure](#data-structure)
-  - [Data Schema](#data-schema)
-
 ## Data Source
 
 This data is sourced from Taiwan's official tourism data platform (政府資料開放平台):
