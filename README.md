@@ -2,12 +2,14 @@
 
 ## Overview
 
-A FastAPI backend service that:
+Taiwander Backend is a FastAPI-powered service that provides seamless access to Taiwan's tourism attractions. The service:
 
-1. Downloads attraction data daily from Taiwan's tourism API
-2. Parses and stores data in MongoDB
-3. Provides RESTful endpoints to query attractions with filters
-4. Includes full-text search functionality for attraction names and descriptions
+- Automatically syncs data daily from Taiwan's official tourism data
+- Processes and stores attraction information in MongoDB
+- Provides RESTful endpoints with comprehensive filtering options
+- Supports full-text search for attraction names and descriptions
+- Offers geospatial queries for finding nearby attractions
+- Delivers fast performance through modern async Python architecture
 
 ## Technologies
 
@@ -103,7 +105,6 @@ Once the server is running, API documentation is available at:
 taiwander-backend/
 ├── app/
 │   ├── main.py                 # FastAPI application entry point
-│   ├── config.py               # Configuration settings
 │   ├── api/
 │   │   ├── v1/                 # API version 1 endpoints
 │   │   │   ├── attractions.py  # Attraction routes
@@ -142,6 +143,84 @@ taiwander-backend/
 - Daily data updates from Taiwan tourism open data
 - Filterable attraction endpoints
 - Full-text search capabilities
+- Geospatial queries for finding nearby attractions
+- CORS support for frontend integration
+
+## API Endpoints
+
+The following endpoints are available:
+
+### Attractions
+
+#### Get All Attractions
+
+```
+GET /api/attractions?page=1&limit=20
+```
+
+Query Parameters:
+
+- `page`: Page number (default: 1)
+- `limit`: Number of items per page (default: 20)
+
+#### Get Attraction by ID
+
+```
+GET /api/attractions/{attraction_id}
+```
+
+#### Get Attractions by Class
+
+```
+GET /api/attractions/class/{class_id}?page=1&limit=20
+```
+
+Query Parameters:
+
+- `page`: Page number (default: 1)
+- `limit`: Number of items per page (default: 20)
+
+#### Search Attractions
+
+```
+GET /api/attractions/search?q=森林&page=1&limit=20
+```
+
+Query Parameters:
+
+- `q`: Search query
+- `page`: Page number (default: 1)
+- `limit`: Number of items per page (default: 20)
+
+### Filters
+
+#### Get Attractions with Filters
+
+```
+GET /api/attractions/filter?classes=16,7&free=true&region=宜蘭縣&page=1&limit=20
+```
+
+Query Parameters:
+
+- `classes`: Comma-separated list of class IDs
+- `free`: Boolean indicating free admission
+- `region`: Region/city name
+- `page`: Page number (default: 1)
+- `limit`: Number of items per page (default: 20)
+
+#### Get Nearby Attractions
+
+```
+GET /api/attractions/nearby?lon=121.5388&lat=24.5023&radius=5&page=1&limit=20
+```
+
+Query Parameters:
+
+- `lon`: Longitude of the center point
+- `lat`: Latitude of the center point
+- `radius`: Radius in kilometers (default: 5)
+- `page`: Page number (default: 1)
+- `limit`: Number of items per page (default: 20)
 
 ## Attraction Data
 
@@ -164,28 +243,29 @@ Our consolidated attraction schema includes:
 | Field                 | Type             | Description                          |
 | --------------------- | ---------------- | ------------------------------------ |
 | `id`                  | string           | Unique identifier for the attraction |
-| `name`                | string           | Name of the attraction               |
+| `attractionName`      | string           | Name of the attraction               |
 | `alternateNames`      | array of strings | Alternative names for the attraction |
 | `description`         | string           | Detailed description                 |
-| `position`            | object           | Geographic coordinates (lat/lon)     |
-| `classes`             | array of numbers | Categories/classifications           |
+| `positionLat`         | float            | Latitude coordinate                  |
+| `positionLon`         | float            | Longitude coordinate                 |
+| `location`            | object           | Geographic coordinates in GeoJSON    |
+| `attractionClasses`   | array of numbers | Categories/classifications           |
 | `postalAddress`       | object           | Physical address                     |
 | `telephones`          | array of objects | Contact numbers                      |
 | `images`              | array of objects | Associated images with URLs          |
-| `organizations`       | array of objects | Managing organizations               |
 | `serviceTimes`        | array of objects | Operating hours                      |
 | `trafficInfo`         | string           | Transportation information           |
 | `parkingInfo`         | string           | Parking details                      |
 | `facilities`          | array of strings | Available amenities                  |
-| `serviceStatus`       | string           | Current service status               |
+| `serviceStatus`       | number           | Current service status               |
 | `isPublicAccess`      | boolean          | Public accessibility indicator       |
 | `isAccessibleForFree` | boolean          | Free admission indicator             |
 | `fees`                | array of objects | Admission costs                      |
 | `paymentMethods`      | array of strings | Accepted payment methods             |
 | `locatedCities`       | array of objects | Location information                 |
-| `websiteURL`          | string           | Official website                     |
-| `mapURLs`             | array of strings | Maps and directions                  |
-| `updatedAt`           | string/datetime  | Last data update timestamp           |
+| `websiteUrl`          | string           | Official website                     |
+| `mapUrls`             | array of strings | Maps and directions                  |
+| `updateTime`          | string/datetime  | Last data update timestamp           |
 
 Each `serviceTimes` object contains:
 
@@ -193,7 +273,7 @@ Each `serviceTimes` object contains:
 | --------------- | ------------------- | ------------------------------------------- |
 | `name`          | string              | Schedule name (e.g., "Weekday Hours")       |
 | `description`   | string or null      | Additional schedule information             |
-| `days`          | array of strings    | Days applicable (e.g., "Monday", "Tuesday") |
+| `serviceDays`   | array of strings    | Days applicable (e.g., "Monday", "Tuesday") |
 | `startTime`     | string/time         | Opening time in 24-hour format              |
 | `endTime`       | string/time         | Closing time in 24-hour format              |
 | `effectiveDate` | string/date or null | Start date of validity period               |
@@ -210,7 +290,7 @@ Each `fees` object contains:
 
 #### AttractionClasses Enum
 
-The `classes` field contains numeric codes representing different categories of attractions:
+The `attractionClasses` field contains numeric codes representing different categories of attractions:
 
 | Code | Chinese Name   | English Name            | Description                                                               |
 | ---- | -------------- | ----------------------- | ------------------------------------------------------------------------- |
@@ -251,155 +331,3 @@ This data is sourced from Taiwan's official tourism data platform (政府資料�
 - Update frequency: Daily
 - Language: Traditional Chinese (Zh_tw)
 - Data Standard: [觀光資料標準 V2.0.pdf](https://media.taiwan.net.tw/Upload/觀光資料標準V2.0.pdf)
-
-## API Endpoints
-
-The following endpoints are available:
-
-### Attractions
-
-#### Get All Attractions
-
-```
-GET /api/attractions?page=1&limit=20
-```
-
-Query Parameters:
-
-- `page`: Page number (default: 1)
-- `limit`: Number of items per page (default: 20)
-
-Response:
-
-```json
-{
-  "total": 3500,
-  "page": 1,
-  "limit": 20,
-  "data": [
-    {
-      "id": "Attraction_345040000G_000001",
-      "name": "太平山國家森林遊樂區",
-      "description": "...",
-      "position": {
-        "lat": 24.5023,
-        "lon": 121.5388
-      },
-      "classes": [16],
-      "isAccessibleForFree": false,
-      "website": "https://example.com/...",
-      "updatedAt": "2023-11-30T00:00:00"
-    }
-    // ...more attractions
-  ]
-}
-```
-
-#### Get Attraction by ID
-
-```
-GET /api/attractions/{attraction_id}
-```
-
-Response:
-
-```json
-{
-  "id": "Attraction_345040000G_000001",
-  "name": "太平山國家森林遊樂區",
-  "description": "...",
-  "position": {
-    "lat": 24.5023,
-    "lon": 121.5388
-  },
-  "classes": [16],
-  "alternateNames": ["Taipingshan National Forest Recreation Area"],
-  "postalAddress": {
-    "addressRegion": "宜蘭縣",
-    "addressLocality": "大同鄉",
-    "streetAddress": "泰雅路89號"
-  },
-  "images": [
-    {
-      "url": "https://example.com/image1.jpg",
-      "description": "太平山景觀"
-    }
-  ],
-  "serviceTimes": [
-    {
-      "name": "平日（星期一~星期五）",
-      "startTime": "06:00:00",
-      "endTime": "20:00:00",
-      "days": ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday"]
-    }
-  ],
-  "fees": [
-    {
-      "name": "全票",
-      "price": 150
-    }
-  ],
-  "isAccessibleForFree": false,
-  "website": "https://example.com/...",
-  "updatedAt": "2023-11-30T00:00:00"
-}
-```
-
-#### Get Attractions by Class
-
-```
-GET /api/attractions/class/{class_id}?page=1&limit=20
-```
-
-Query Parameters:
-
-- `page`: Page number (default: 1)
-- `limit`: Number of items per page (default: 20)
-
-Response: Same format as Get All Attractions
-
-#### Search Attractions
-
-```
-GET /api/attractions/search?q=森林&page=1&limit=20
-```
-
-Query Parameters:
-
-- `q`: Search query
-- `page`: Page number (default: 1)
-- `limit`: Number of items per page (default: 20)
-
-Response: Same format as Get All Attractions
-
-### Filters
-
-#### Get Attractions with Filters
-
-```
-GET /api/attractions/filter?classes=16,7&free=true&region=宜蘭縣&page=1&limit=20
-```
-
-Query Parameters:
-
-- `classes`: Comma-separated list of class IDs
-- `free`: Boolean indicating free admission
-- `region`: Region/city name
-- `page`: Page number (default: 1)
-- `limit`: Number of items per page (default: 20)
-
-#### Get Nearby Attractions
-
-```
-GET /api/attractions/nearby?lon=121.5388&lat=24.5023&radius=5&page=1&limit=20
-```
-
-Query Parameters:
-
-- `lon`: Longitude of the center point
-- `lat`: Latitude of the center point
-- `radius`: Radius in kilometers (default: 5)
-- `page`: Page number (default: 1)
-- `limit`: Number of items per page (default: 20)
-
-Response: Same format as Get All Attractions
