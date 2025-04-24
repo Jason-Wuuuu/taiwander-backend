@@ -1,4 +1,4 @@
-from typing import List, Optional, Dict, Any
+from typing import List, Optional, Dict, Any, Union
 from pydantic import BaseModel, Field
 
 
@@ -10,22 +10,24 @@ class Position(BaseModel):
 
 class PostalAddress(BaseModel):
     """Postal address model."""
-    addressRegion: str = Field(..., description="Region/city name")
-    addressLocality: str = Field(..., description="Locality/town name")
-    streetAddress: str = Field(..., description="Street address")
-    zipCode: str = Field(..., description="Postal/ZIP code")
+    city: Optional[str] = Field(None, description="Region/city name")
+    cityCode: Optional[str] = Field(None, description="City code")
+    town: Optional[str] = Field(None, description="Locality/town name")
+    townCode: Optional[str] = Field(None, description="Town code")
+    zipCode: Optional[str] = Field(None, description="Postal/ZIP code")
+    streetAddress: Optional[str] = Field(None, description="Street address")
 
 
 class Telephone(BaseModel):
     """Telephone model."""
-    tel: str = Field(..., description="Telephone number")
+    tel: Optional[str] = Field(None, description="Telephone number")
 
 
 class Image(BaseModel):
     """Image model."""
-    name: str = Field(..., description="Image name")
+    name: Optional[str] = Field(None, description="Image name")
     description: Optional[str] = Field(None, description="Image description")
-    url: str = Field(..., description="Image URL")
+    url: Optional[str] = Field(None, description="Image URL")
     width: Optional[int] = Field(None, description="Image width")
     height: Optional[int] = Field(None, description="Image height")
     keywords: List[str] = Field(
@@ -34,13 +36,13 @@ class Image(BaseModel):
 
 class ServiceTime(BaseModel):
     """Service time model."""
-    name: str = Field(..., description="Service time name")
+    name: Optional[str] = Field(None, description="Service time name")
     description: Optional[str] = Field(
         None, description="Service time description")
-    days: List[str] = Field(default_factory=list,
-                            description="Days of the week")
-    startTime: str = Field(..., description="Start time")
-    endTime: str = Field(..., description="End time")
+    serviceDays: List[str] = Field(default_factory=list,
+                                   description="Days of the week")
+    startTime: Optional[str] = Field(None, description="Start time")
+    endTime: Optional[str] = Field(None, description="End time")
     effectiveDate: Optional[str] = Field(
         None, description="Date when this service time becomes effective")
     expireDate: Optional[str] = Field(
@@ -49,31 +51,45 @@ class ServiceTime(BaseModel):
 
 class Fee(BaseModel):
     """Fee model."""
-    name: str = Field(..., description="Fee name")
-    price: float = Field(..., description="Fee amount")
+    name: Optional[str] = Field(None, description="Fee name")
+    price: Optional[float] = Field(None, description="Fee amount")
     description: Optional[str] = Field(None, description="Fee description")
     url: Optional[str] = Field(None, description="URL for fee information")
 
 
 class SocialMedia(BaseModel):
     """Social media model."""
-    name: str = Field(..., description="Social media name")
+    name: Optional[str] = Field(None, description="Social media name")
     description: Optional[str] = Field(
         None, description="Social media description")
-    url: str = Field(..., description="Social media URL")
+    url: Optional[str] = Field(None, description="Social media URL")
     keywords: List[str] = Field(default_factory=list, description="Keywords")
     tags: List[str] = Field(default_factory=list, description="Tags")
+
+
+class LocatedCity(BaseModel):
+    """Located city model."""
+    name: Optional[str] = Field(None, description="City name")
+    city: Optional[str] = Field(None, description="City")
+    cityCode: Optional[str] = Field(None, description="City code")
+    town: Optional[str] = Field(None, description="Town")
+    townCode: Optional[str] = Field(None, description="Town code")
+    classId: Optional[int] = Field(None, alias="class", description="Class ID")
 
 
 class Attraction(BaseModel):
     """Attraction model."""
     id: str = Field(..., description="Unique identifier")
-    name: str = Field(..., description="Attraction name")
+    attractionName: str = Field(..., description="Attraction name")
     alternateNames: List[str] = Field(
         default_factory=list, description="Alternative names")
-    description: str = Field(..., description="Detailed description")
-    position: Position = Field(..., description="Geographic position")
-    classes: List[int] = Field(
+    description: Optional[str] = Field(
+        None, description="Detailed description")
+    positionLat: Optional[float] = Field(None, description="Latitude")
+    positionLon: Optional[float] = Field(None, description="Longitude")
+    location: Optional[Dict[str, Any]] = Field(None,
+                                               description="Geographic position in GeoJSON format")
+    attractionClasses: List[int] = Field(
         default_factory=list, description="Attraction classification codes")
     postalAddress: Optional[PostalAddress] = Field(
         None, description="Postal address")
@@ -86,15 +102,37 @@ class Attraction(BaseModel):
     trafficInfo: Optional[str] = Field(
         None, description="Transportation information")
     parkingInfo: Optional[str] = Field(None, description="Parking information")
+    facilities: List[str] = Field(
+        default_factory=list, description="Facility information")
+    serviceStatus: Optional[int] = Field(None, description="Service status")
     isPublicAccess: bool = Field(
         True, description="Public accessibility indicator")
     isAccessibleForFree: bool = Field(
         False, description="Free admission indicator")
-    fees: List[Fee] = Field(default_factory=list, description="Admission fees")
-    website: Optional[str] = Field(None, description="Official website URL")
-    socialMediaURLs: List[SocialMedia] = Field(
+    feeInfo: Optional[str] = Field(None, description="Fee information")
+    fees: List[Fee] = Field(
+        default_factory=list, description="Admission fees")
+    paymentMethods: List[str] = Field(
+        default_factory=list, description="Payment methods")
+    locatedCities: List[LocatedCity] = Field(
+        default_factory=list, description="Located cities")
+    websiteUrl: Optional[str] = Field(None, description="Official website URL")
+    reservationUrls: List[str] = Field(
+        default_factory=list, description="Reservation URLs")
+    mapUrls: List[str] = Field(
+        default_factory=list, description="Map URLs")
+    sameAsUrls: List[str] = Field(
+        default_factory=list, description="Same as URLs")
+    socialMediaUrls: List[SocialMedia] = Field(
         default_factory=list, description="Social media URLs")
-    updatedAt: str = Field(..., description="Last update timestamp")
+    visitDuration: Optional[int] = Field(None, description="Visit duration")
+    assetsClass: Optional[int] = Field(None, description="Assets class")
+    subAttractions: List[str] = Field(
+        default_factory=list, description="Sub attractions")
+    partOfAttraction: Optional[str] = Field(
+        None, description="Part of attraction")
+    remarks: Optional[str] = Field(None, description="Remarks")
+    updateTime: str = Field(..., description="Last update timestamp")
 
 
 class AttractionResponse(BaseModel):

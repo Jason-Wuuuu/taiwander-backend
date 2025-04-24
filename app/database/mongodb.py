@@ -45,10 +45,20 @@ class MongoDB:
 
         # Create indexes for better query performance
         # No need to index _id as MongoDB does this automatically
-        await cls.db.attractions.create_index([("name", "text"), ("description", "text")])
-        await cls.db.attractions.create_index([("classes", 1)])
-        await cls.db.attractions.create_index([("position.lat", 1), ("position.lon", 1)])
-        await cls.db.attractions.create_index([("postalAddress.addressRegion", 1)])
+
+        # Text search index for the search() method
+        await cls.db.attractions.create_index([("attractionName", "text"), ("description", "text")])
+
+        # Index for filtering by class in find_by_classes() and find_with_filters()
+        await cls.db.attractions.create_index([("attractionClasses", 1)])
+
+        # Geospatial index for find_nearby() and count_nearby()
+        await cls.db.attractions.create_index([("location", "2dsphere")])
+
+        # Index for filtering by region in find_by_region() and find_with_filters()
+        await cls.db.attractions.create_index([("postalAddress.city", 1)])
+
+        # Index for filtering free attractions in find_free_attractions() and find_with_filters()
         await cls.db.attractions.create_index([("isAccessibleForFree", 1)])
 
         logger.info("MongoDB collections and indexes set up successfully")

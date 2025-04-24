@@ -17,7 +17,7 @@ class AttractionsRepository(BaseRepository):
     async def find_by_classes(self, class_ids: List[int], skip: int = 0, limit: int = 20) -> List[Dict]:
         """Find attractions by class IDs."""
         return await self.find_many(
-            {"classes": {"$in": class_ids}},
+            {"attractionClasses": {"$in": class_ids}},
             skip=skip,
             limit=limit,
             # sort=[("name", 1)]
@@ -25,12 +25,12 @@ class AttractionsRepository(BaseRepository):
 
     async def count_by_classes(self, class_ids: List[int]) -> int:
         """Count attractions by class IDs."""
-        return await self.count({"classes": {"$in": class_ids}})
+        return await self.count({"attractionClasses": {"$in": class_ids}})
 
     async def find_by_region(self, region: str, skip: int = 0, limit: int = 20) -> List[Dict]:
         """Find attractions by region."""
         return await self.find_many(
-            {"postalAddress.addressRegion": {"$regex": region, "$options": "i"}},
+            {"postalAddress.city": {"$regex": region, "$options": "i"}},
             skip=skip,
             limit=limit,
             # sort=[("name", 1)]
@@ -38,7 +38,7 @@ class AttractionsRepository(BaseRepository):
 
     async def count_by_region(self, region: str) -> int:
         """Count attractions by region."""
-        return await self.count({"postalAddress.addressRegion": {"$regex": region, "$options": "i"}})
+        return await self.count({"postalAddress.city": {"$regex": region, "$options": "i"}})
 
     async def find_free_attractions(self, skip: int = 0, limit: int = 20) -> List[Dict]:
         """Find attractions with free admission."""
@@ -78,20 +78,24 @@ class AttractionsRepository(BaseRepository):
         query = {}
 
         if classes:
-            query["classes"] = {"$in": classes}
+            query["attractionClasses"] = {"$in": classes}
 
         if free is not None:
-            query["isAccessibleForFree"] = free
+            # Handle both boolean and integer representations
+            if free:
+                query["isAccessibleForFree"] = {"$in": [True, 1]}
+            else:
+                query["isAccessibleForFree"] = {"$in": [False, 0]}
 
         if region:
-            query["postalAddress.addressRegion"] = {
+            query["postalAddress.city"] = {
                 "$regex": region, "$options": "i"}
 
         return await self.find_many(
             query,
             skip=skip,
             limit=limit,
-            sort=[("name", 1)]
+            sort=[("attractionName", 1)]
         )
 
     async def count_with_filters(
@@ -104,13 +108,17 @@ class AttractionsRepository(BaseRepository):
         query = {}
 
         if classes:
-            query["classes"] = {"$in": classes}
+            query["attractionClasses"] = {"$in": classes}
 
         if free is not None:
-            query["isAccessibleForFree"] = free
+            # Handle both boolean and integer representations
+            if free:
+                query["isAccessibleForFree"] = {"$in": [True, 1]}
+            else:
+                query["isAccessibleForFree"] = {"$in": [False, 0]}
 
         if region:
-            query["postalAddress.addressRegion"] = {
+            query["postalAddress.city"] = {
                 "$regex": region, "$options": "i"}
 
         return await self.count(query)
@@ -154,9 +162,9 @@ class AttractionsRepository(BaseRepository):
 
         # Add distance field to results
         for attraction in attractions:
-            if "position" in attraction and attraction["position"]:
-                attraction_lat = attraction["position"]["lat"]
-                attraction_lon = attraction["position"]["lon"]
+            if "positionLat" in attraction and "positionLon" in attraction:
+                attraction_lat = attraction["positionLat"]
+                attraction_lon = attraction["positionLon"]
 
                 # Calculate distance using Haversine formula
                 R = 6371  # Earth's radius in km
@@ -195,31 +203,23 @@ class AttractionsRepository(BaseRepository):
             # Drop existing collection and recreate
             await self.drop_collection()
 
-            # Convert position format to GeoJSON for geospatial queries
-            for attraction in attractions:
-                if "position" in attraction and attraction["position"]:
-                    lat = attraction["position"]["lat"]
-                    lon = attraction["position"]["lon"]
-                    # Add GeoJSON format location field
-                    attraction["location"] = {
-                        "type": "Point",
-                        # GeoJSON uses [longitude, latitude] order
-                        "coordinates": [lon, lat]
-                    }
-
             # Insert new data if any
             if attractions:
                 await self.insert_many(attractions)
 
-            # Recreate the text index for search functionality
-            await self.create_index([("name", "text"), ("description", "text")])
+            # Text search index for the search() method
+            await self.create_index([("attractionName", "text"), ("description", "text")])
 
-            # Recreate other indexes for better query performance
-            await self.create_index([("classes", 1)])
-            await self.create_index([("position.lat", 1), ("position.lon", 1)])
-            # 2dsphere index is for geospatial queries
+            # Index for filtering by class
+            await self.create_index([("attractionClasses", 1)])
+
+            # Geospatial index for nearby queries
             await self.create_index([("location", "2dsphere")])
-            await self.create_index([("postalAddress.addressRegion", 1)])
+
+            # Index for filtering by region
+            await self.create_index([("postalAddress.city", 1)])
+
+            # Index for filtering free attractions
             await self.create_index([("isAccessibleForFree", 1)])
 
             return True
