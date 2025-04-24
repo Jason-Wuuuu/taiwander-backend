@@ -240,6 +240,53 @@ async def filter_attractions(
     }
 
 
+@router.get("/nearby", response_model=AttractionListResponse)
+async def nearby_attractions(
+    lon: float = Query(..., description="Longitude of the center point"),
+    lat: float = Query(..., description="Latitude of the center point"),
+    radius: float = Query(
+        5.0, description="Radius in kilometers (default: 5)"),
+    pagination: PaginationParams = Depends(),
+    repo: AttractionsRepository = Depends(get_attractions_repo)
+):
+    """Get attractions near a specific location within a radius.
+
+    Args:
+        lon: Longitude of the center point
+        lat: Latitude of the center point  
+        radius: Radius in kilometers (default: 5)
+
+    Returns:
+        List of attractions within the specified radius
+    """
+    skip = (pagination.page - 1) * pagination.limit
+
+    attractions = await repo.find_nearby(
+        lon=lon,
+        lat=lat,
+        radius_km=radius,
+        skip=skip,
+        limit=pagination.limit
+    )
+
+    # Transform attractions to match Pydantic model
+    transformed_attractions = [
+        transform_attraction_document(a) for a in attractions]
+
+    total = await repo.count_nearby(
+        lon=lon,
+        lat=lat,
+        radius_km=radius
+    )
+
+    return {
+        "total": total,
+        "page": pagination.page,
+        "limit": pagination.limit,
+        "data": transformed_attractions
+    }
+
+
 @router.get("/class/{class_id}", response_model=AttractionListResponse)
 async def get_attractions_by_class(
     class_id: int = Path(..., description="Attraction class ID"),

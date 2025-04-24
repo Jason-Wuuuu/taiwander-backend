@@ -387,3 +387,19 @@ Query Parameters:
 - `region`: Region/city name
 - `page`: Page number (default: 1)
 - `limit`: Number of items per page (default: 20)
+
+#### Get Nearby Attractions
+
+```
+GET /api/attractions/nearby?lon=121.5388&lat=24.5023&radius=5&page=1&limit=20
+```
+
+Query Parameters:
+
+- `lon`: Longitude of the center point
+- `lat`: Latitude of the center point
+- `radius`: Radius in kilometers (default: 5)
+- `page`: Page number (default: 1)
+- `limit`: Number of items per page (default: 20)
+
+Response: Same format as Get All Attractions

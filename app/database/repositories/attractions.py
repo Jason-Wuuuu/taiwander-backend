@@ -1,6 +1,7 @@
 from typing import Dict, List, Optional
 from motor.motor_asyncio import AsyncIOMotorDatabase
 from .base import BaseRepository
+import math
 
 
 class AttractionsRepository(BaseRepository):
@@ -114,6 +115,87 @@ class AttractionsRepository(BaseRepository):
 
         return await self.count(query)
 
+    async def find_nearby(self, lon: float, lat: float, radius_km: float, skip: int = 0, limit: int = 20) -> List[Dict]:
+        """Find attractions near a specific location within a radius in kilometers.
+
+        Args:
+            lon: Longitude of the center point
+            lat: Latitude of the center point
+            radius_km: Radius in kilometers
+            skip: Number of items to skip (pagination)
+            limit: Maximum number of items to return
+
+        Returns:
+            List of attractions within the specified radius
+        """
+        # MongoDB uses the WGS84 coordinate reference system
+        # Convert km to radians (Earth's radius is approximately 6371 km)
+        radius_radians = radius_km / 6371
+
+        # Instead of using $geoWithin, let's use a simpler approach with direct coordinate comparison
+        # We'll calculate a bounding box around the search point for initial filtering
+        lat_delta = radius_km / 111.12  # 1 degree latitude is approximately 111.12 km
+        # 1 degree longitude varies with latitude; it's about 111.12 * cos(lat) km
+        lon_delta = radius_km / (111.12 * abs(math.cos(math.radians(lat))))
+
+        min_lat = lat - lat_delta
+        max_lat = lat + lat_delta
+        min_lon = lon - lon_delta
+        max_lon = lon + lon_delta
+
+        # Get results within the bounding box
+        query = {
+            "$and": [
+                {"position.lat": {"$gte": min_lat, "$lte": max_lat}},
+                {"position.lon": {"$gte": min_lon, "$lte": max_lon}}
+            ]
+        }
+
+        attractions = await self.find_many(
+            query,
+            skip=skip,
+            limit=limit,
+            # Sort by closest first - would require an aggregation pipeline
+            # For now, use name as default sort
+            sort=[("name", 1)]
+        )
+
+        # Further filter by actual distance for more accurate results
+        result = []
+        for attraction in attractions:
+            if "position" in attraction and attraction["position"]:
+                # Calculate the actual distance
+                attraction_lat = attraction["position"]["lat"]
+                attraction_lon = attraction["position"]["lon"]
+
+                # Use Haversine formula to calculate distance
+                R = 6371  # Earth's radius in km
+                dLat = math.radians(attraction_lat - lat)
+                dLon = math.radians(attraction_lon - lon)
+                a = (math.sin(dLat/2) * math.sin(dLat/2) +
+                     math.cos(math.radians(lat)) * math.cos(math.radians(attraction_lat)) *
+                     math.sin(dLon/2) * math.sin(dLon/2))
+                c = 2 * math.atan2(math.sqrt(a), math.sqrt(1-a))
+                distance = R * c
+
+                if distance <= radius_km:
+                    result.append(attraction)
+
+                    # Add distance for reference (optional)
+                    attraction["distance_km"] = distance
+
+        # Apply pagination after filtering
+        start = skip
+        end = min(start + limit, len(result))
+        return result[start:end]
+
+    async def count_nearby(self, lon: float, lat: float, radius_km: float) -> int:
+        """Count attractions near a specific location within a radius in kilometers."""
+        # Reuse the same logic to find nearby attractions but just return the count
+        # Use a large limit to get all
+        attractions = await self.find_nearby(lon, lat, radius_km, skip=0, limit=1000000)
+        return len(attractions)
+
     async def replace_all(self, attractions: List[Dict]) -> bool:
         """Replace all attractions data with new data."""
         try:
@@ -130,6 +212,8 @@ class AttractionsRepository(BaseRepository):
             # Recreate other indexes for better query performance
             await self.create_index([("classes", 1)])
             await self.create_index([("position.lat", 1), ("position.lon", 1)])
+            # Remove the 2dsphere index that's causing the error
+            # await self.create_index([("position", "2dsphere")])
             await self.create_index([("postalAddress.addressRegion", 1)])
             await self.create_index([("isAccessibleForFree", 1)])
 
