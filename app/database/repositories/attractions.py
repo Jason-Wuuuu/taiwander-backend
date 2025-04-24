@@ -128,47 +128,37 @@ class AttractionsRepository(BaseRepository):
         Returns:
             List of attractions within the specified radius
         """
-        # MongoDB uses the WGS84 coordinate reference system
-        # Convert km to radians (Earth's radius is approximately 6371 km)
-        radius_radians = radius_km / 6371
+        # Convert kilometers to meters for MongoDB
+        radius_meters = radius_km * 1000
 
-        # Instead of using $geoWithin, let's use a simpler approach with direct coordinate comparison
-        # We'll calculate a bounding box around the search point for initial filtering
-        lat_delta = radius_km / 111.12  # 1 degree latitude is approximately 111.12 km
-        # 1 degree longitude varies with latitude; it's about 111.12 * cos(lat) km
-        lon_delta = radius_km / (111.12 * abs(math.cos(math.radians(lat))))
-
-        min_lat = lat - lat_delta
-        max_lat = lat + lat_delta
-        min_lon = lon - lon_delta
-        max_lon = lon + lon_delta
-
-        # Get results within the bounding box
+        # Use MongoDB's $nearSphere operator with $maxDistance
         query = {
-            "$and": [
-                {"position.lat": {"$gte": min_lat, "$lte": max_lat}},
-                {"position.lon": {"$gte": min_lon, "$lte": max_lon}}
-            ]
+            "location": {
+                "$nearSphere": {
+                    "$geometry": {
+                        "type": "Point",
+                        # GeoJSON uses [longitude, latitude] order
+                        "coordinates": [lon, lat]
+                    },
+                    "$maxDistance": radius_meters
+                }
+            }
         }
 
+        # MongoDB will automatically sort by distance
         attractions = await self.find_many(
             query,
             skip=skip,
-            limit=limit,
-            # Sort by closest first - would require an aggregation pipeline
-            # For now, use name as default sort
-            sort=[("name", 1)]
+            limit=limit
         )
 
-        # Further filter by actual distance for more accurate results
-        result = []
+        # Add distance field to results
         for attraction in attractions:
             if "position" in attraction and attraction["position"]:
-                # Calculate the actual distance
                 attraction_lat = attraction["position"]["lat"]
                 attraction_lon = attraction["position"]["lon"]
 
-                # Use Haversine formula to calculate distance
+                # Calculate distance using Haversine formula
                 R = 6371  # Earth's radius in km
                 dLat = math.radians(attraction_lat - lat)
                 dLon = math.radians(attraction_lon - lon)
@@ -178,29 +168,44 @@ class AttractionsRepository(BaseRepository):
                 c = 2 * math.atan2(math.sqrt(a), math.sqrt(1-a))
                 distance = R * c
 
-                if distance <= radius_km:
-                    result.append(attraction)
+                attraction["distance_km"] = distance
 
-                    # Add distance for reference (optional)
-                    attraction["distance_km"] = distance
-
-        # Apply pagination after filtering
-        start = skip
-        end = min(start + limit, len(result))
-        return result[start:end]
+        return attractions
 
     async def count_nearby(self, lon: float, lat: float, radius_km: float) -> int:
         """Count attractions near a specific location within a radius in kilometers."""
-        # Reuse the same logic to find nearby attractions but just return the count
-        # Use a large limit to get all
-        attractions = await self.find_nearby(lon, lat, radius_km, skip=0, limit=1000000)
-        return len(attractions)
+        # Convert km to radians (Earth's radius is approximately 6371 km)
+        radius_radians = radius_km / 6371
+
+        # Use $geoWithin with $centerSphere for counting
+        # $centerSphere takes [lng, lat] and radius in radians
+        query = {
+            "location": {
+                "$geoWithin": {
+                    "$centerSphere": [[lon, lat], radius_radians]
+                }
+            }
+        }
+
+        return await self.count(query)
 
     async def replace_all(self, attractions: List[Dict]) -> bool:
         """Replace all attractions data with new data."""
         try:
             # Drop existing collection and recreate
             await self.drop_collection()
+
+            # Convert position format to GeoJSON for geospatial queries
+            for attraction in attractions:
+                if "position" in attraction and attraction["position"]:
+                    lat = attraction["position"]["lat"]
+                    lon = attraction["position"]["lon"]
+                    # Add GeoJSON format location field
+                    attraction["location"] = {
+                        "type": "Point",
+                        # GeoJSON uses [longitude, latitude] order
+                        "coordinates": [lon, lat]
+                    }
 
             # Insert new data if any
             if attractions:
@@ -212,8 +217,8 @@ class AttractionsRepository(BaseRepository):
             # Recreate other indexes for better query performance
             await self.create_index([("classes", 1)])
             await self.create_index([("position.lat", 1), ("position.lon", 1)])
-            # Remove the 2dsphere index that's causing the error
-            # await self.create_index([("position", "2dsphere")])
+            # 2dsphere index is for geospatial queries
+            await self.create_index([("location", "2dsphere")])
             await self.create_index([("postalAddress.addressRegion", 1)])
             await self.create_index([("isAccessibleForFree", 1)])
 
