@@ -1,5 +1,7 @@
 # Taiwander Backend
 
+> **Why "Taiwander"?** Taiwan + wander = Taiwander. Discover and explore Taiwan's diverse attractions!
+
 ## Overview
 
 Taiwander Backend is a FastAPI-powered service that provides seamless access to Taiwan's tourism attractions. The service:
@@ -10,6 +12,34 @@ Taiwander Backend is a FastAPI-powered service that provides seamless access to 
 - Supports full-text search for attraction names and descriptions
 - Offers geospatial queries for finding nearby attractions
 - Delivers fast performance through modern async Python architecture
+
+## Table of Contents
+
+- [Data Source](#data-source)
+- [Technologies](#technologies)
+- [Requirements](#requirements)
+- [Dependencies](#dependencies)
+- [Setup](#setup)
+  - [Virtual Environment](#virtual-environment)
+  - [Environment Variables](#environment-variables)
+  - [Running the Application](#running-the-application)
+  - [Data Synchronization](#data-synchronization)
+  - [API Documentation](#api-documentation)
+- [Project Structure](#project-structure)
+- [Features](#features)
+- [API Endpoints](#api-endpoints)
+  - [Attractions](#attractions)
+  - [Filters](#filters)
+- [Attraction Data](#attraction-data)
+  - [Data Structure](#data-structure)
+  - [Data Schema](#data-schema)
+
+## Data Source
+
+This data is sourced from Taiwan's official tourism data platform (政府資料開放平台):
+
+- URL: [景點 - 觀光資訊資料庫](https://data.gov.tw/dataset/7777)
+- Data Standard: [觀光資料標準 V2.0.pdf](https://media.taiwan.net.tw/Upload/觀光資料標準V2.0.pdf)
 
 ## Technologies
 
@@ -322,12 +352,3 @@ The `attractionClasses` field contains numeric codes representing different cate
 | 26   | 生態場館類     | Ecological Venues       | Ecological venues (zoos, aquariums, nature education centers)             |
 | 27   | 娛樂場館類     | Entertainment Venues    | Entertainment venues (cinemas, game centers)                              |
 | 254  | 其他           | Others                  | Others                                                                    |
-
-### Data Source
-
-This data is sourced from Taiwan's official tourism data platform (政府資料開放平台):
-
-- URL: [景點 - 觀光資訊資料庫](https://data.gov.tw/dataset/7777)
-- Update frequency: Daily
-- Language: Traditional Chinese (Zh_tw)
-- Data Standard: [觀光資料標準 V2.0.pdf](https://media.taiwan.net.tw/Upload/觀光資料標準V2.0.pdf)
